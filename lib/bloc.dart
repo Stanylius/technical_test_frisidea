@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:equatable/equatable.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 // Application Event ========================================================= START
@@ -11,35 +10,13 @@ class AppEvent extends Equatable{
   List<Object> get props => [];
 }
 
-class EventOne extends AppEvent {
-  final int input;
+class CalculatePrimeNumber extends AppEvent {
+  final int start;
+  final int end;
   
-  const EventOne({
-    required this.input
-  });
-}
-
-class EventTwo extends AppEvent {
-  final int input;
-  
-  const EventTwo({
-    required this.input
-  });
-}
-
-class EventThree extends AppEvent {
-  final int input;
-
-  const EventThree({
-    required this.input
-  });
-}
-
-class EventFour extends AppEvent {
-  final int input;
-
-  const EventFour({
-    required this.input
+  const CalculatePrimeNumber({
+    required this.start,
+    required this.end
   });
 }
 // Application Event ========================================================= END
@@ -51,7 +28,7 @@ abstract class AppState extends Equatable {
 }
 
 class ApplicationInitial extends AppState {
-  final String result;
+  final List<int> result;
 
   ApplicationInitial({
     required this.result
@@ -76,90 +53,34 @@ class ApplicationBloc extends Bloc<AppEvent, AppState> {
 
   @override
   Stream<AppState> mapEventToState(AppEvent event,) async* {
-    if(event is EventOne) {
-      yield* _mapEventOneToState(event.input);
-    }
-    else if(event is EventTwo) {
-      yield* _mapEventTwoToState(event.input);
-    }
-    else if(event is EventThree) {
-      yield* _mapEventThreeToState(event.input);
-    }
-    else if(event is EventFour) {
-      yield* _mapEventFourToState(event.input);
+    if(event is CalculatePrimeNumber) {
+      yield* _mapCalculatePrimeNumberToState(event.start, event.end);
     }
   }
 
-  Stream<AppState> _mapEventOneToState(int input) async* {
+  Stream<AppState> _mapCalculatePrimeNumberToState(int start, int end) async* {
     yield ApplicationLoading();
-    String output = '';
-    try{
-      for (var i = 1; i <= input; i++) {
-        output = output + " " + i.toString();
-      }
-      yield ApplicationInitial(
-        result: output
-      );
-    } catch(error){
-      yield ApplicationError(
-        errorMessage: error.toString()
-      );
-    }
-  }
 
-  Stream<AppState> _mapEventTwoToState(int input) async* {
-    yield ApplicationLoading();
-    print("input is : " + input.toString());
-    String output = '';
-    try{
-      for (var i = 1; i <= input; i++) {
-        output = output + " " + i.toString();
-      }
-      for (var i = input - 1; i > 0; i--) {
-        output = output + " " + i.toString();
-      }
-      yield ApplicationInitial(
-        result: output
-      );
-    } catch(error){
-      yield ApplicationError(
-        errorMessage: error.toString()
-      );
-    }
-  }
+    List<int> output = [];
 
-  Stream<AppState> _mapEventThreeToState(int input) async* {
-    yield ApplicationLoading();
-    String output = '10';
-    int initialValue = 10;
-    int currentValue = initialValue;
-    try{
-      for (var i = 0; i < input-1; i++) {
-        currentValue = currentValue+11;
-        output = output + " " + (currentValue).toString();
-      }
-      yield ApplicationInitial(
-        result: output
-      );
-    } catch(error){
-      yield ApplicationError(
-        errorMessage: error.toString()
-      );
-    }
-  }
+    // function to check if the number is prime or not
+    isPrime(int num) {
+      // negate 1
+      if(num < 2) return false;
 
-  Stream<AppState> _mapEventFourToState(int input) async* {
-    yield ApplicationLoading();
-    String output = '';
-    try{
-      for (var i = 1; i <= input; i++) {
-        if (i % 7 == 0) {
-          output = output + " TUJUH";
+      for (var k = 2; k < num; k++){
+        if(num % k == 0){
+          return false;
         }
-        else if (i % 5 == 0) {
-          output = output + " LIMA";
-        } else {
-          output = output + " " + i.toString();
+      }
+      return true;
+    }
+
+    try{
+      for (var i = start; i <= end; i++) {
+        bool number = isPrime(i);
+        if (number) {
+          output.add(i);
         }
       }
       yield ApplicationInitial(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:technical_test_17/bloc.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({ Key? key }) : super(key: key);
@@ -10,164 +11,228 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  TextEditingController inputController = TextEditingController();
+  TextEditingController startController = TextEditingController();
+  TextEditingController endController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    startController.text = '';
+    endController.text = '';
   }
 
   @override
   void dispose() {
-    inputController.dispose();
+    startController.dispose();
+    endController.dispose();
     super.dispose();
+  }
+
+  List<Widget> calculationResult(List<int> results) {
+    List<Widget> calculationResultWidget = [];
+    for (var element in results) {
+      calculationResultWidget.add(
+        Text(
+          element.toString()+', '
+        )
+      );
+    }
+    return calculationResultWidget;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text("Prime number checker"),
+      ),
       body: BlocProvider(
         create: (context) {
-          return ApplicationBloc(ApplicationInitial(result: ''));
+          return ApplicationBloc(ApplicationInitial(result: const []));
         },
         child: BlocBuilder<ApplicationBloc, AppState>(
           builder: (context, applicationState) {
-            return applicationState is ApplicationLoading ? Center(
+            return applicationState is ApplicationLoading ? const Center(
               child: Text("Loading..."),
-            ) : applicationState is ApplicationError ? Center(
+            ) : applicationState is ApplicationError ? const Center(
               child: Text("Error..."),
-            ) : applicationState is ApplicationInitial ? Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // input
-                Container(
-                  padding: EdgeInsets.all(15),
-                  child: SizedBox(
-                    child: TextFormField(
-                      controller: inputController,
-                      onChanged: (value) {},
-                      decoration: InputDecoration(
-                        labelText: "Input",
-                        hintText: "Enter a number",
+            ) : applicationState is ApplicationInitial ? SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // input
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(15),
+                          child: SizedBox(
+                            child: TextFormField(
+                              controller: startController,
+                              onChanged: (value) {},
+                              decoration: const InputDecoration(
+                                labelText: "Start",
+                                hintText: "Enter a number",
+                              ),
+                              autovalidateMode: AutovalidateMode.onUserInteraction,
+                              validator: (val) {
+                                if(val!.isEmpty) {
+                                  return "Input is required";
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ),
                       ),
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      validator: (val) {
-                        if(val!.isEmpty) {
-                          return "Input is required";
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(15),
+                          child: SizedBox(
+                            child: TextFormField(
+                              controller: endController,
+                              onChanged: (value) {},
+                              decoration: const InputDecoration(
+                                labelText: "End",
+                                hintText: "Enter a number",
+                              ),
+                              autovalidateMode: AutovalidateMode.onUserInteraction,
+                              validator: (val) {
+                                if(val!.isEmpty) {
+                                  return "Input is required";
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(15),
+                    child: MaterialButton(
+                      onPressed: (){
+                        if ((startController.text != '' || startController.text.isNotEmpty) && (endController.text != '' || endController.text.isNotEmpty)) {
+                          BlocProvider.of<ApplicationBloc>(context).add(
+                            CalculatePrimeNumber(
+                              start: int.parse(startController.text),
+                              end: int.parse(endController.text)
+                            )
+                          );
                         }
-                        return null;
                       },
+                      height: 45,
+                      minWidth: 100,
+                      child: const Text('CALCULATE', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),),
+                      textColor: Colors.white,
+                      color: Colors.blue,
+                      shape: const StadiumBorder(),
                     ),
                   ),
-                ),
-                // 1st row buttons
-                Container(
-                  padding: EdgeInsets.all(15),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: MaterialButton(
-                          onPressed: (){
-                            BlocProvider.of<ApplicationBloc>(context).add(
-                              EventOne(
-                                input: int.parse(inputController.text)
-                              )
-                            );
-                          },
-                          height: 45,
-                          minWidth: 100,
-                          child: const Text('1', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),),
-                          textColor: Colors.white,
-                          color: Colors.red,
-                          shape: const StadiumBorder(),
-                        ),
-                      ),
-                      SizedBox(width: 10,),
-                      Expanded(
-                        child: MaterialButton(
-                          onPressed: (){
-                            BlocProvider.of<ApplicationBloc>(context).add(
-                              EventTwo(
-                                input: int.parse(inputController.text)
-                              )
-                            );
-                          },
-                          height: 45,
-                          minWidth: 100,
-                          child: const Text('2', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),),
-                          textColor: Colors.white,
-                          color: Colors.red,
-                          shape: const StadiumBorder(),
-                        ),
-                      ),
-                    ],
+                  const SizedBox(height: 20,),
+                  // result here
+                  Container(
+                    padding: const EdgeInsets.only(left: 15),
+                    child: const Text(
+                      "Result:"
+                    ),
                   ),
-                ),
-                // 2nd row buttons
-                Container(
-                  padding: EdgeInsets.all(15),
-                  child: Row(
+                  const SizedBox(height: 10,),
+                  Container(
+                    padding: const EdgeInsets.all(15),
+                    child: Wrap(
+                      children: calculationResult(applicationState.result),
+                    ),
+                  ),
+                  Container(
+                    height: 2,
+                    color: Colors.grey[400],
+                  ),
+                  ExpansionTile(
+                    title: const Text("My profile"),
                     children: [
-                      Expanded(
-                        child: MaterialButton(
-                          onPressed: (){
-                            BlocProvider.of<ApplicationBloc>(context).add(
-                              EventThree(
-                                input: int.parse(inputController.text)
-                              )
-                            );
-                          },
-                          height: 45,
-                          minWidth: 100,
-                          child: const Text('3', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),),
-                          textColor: Colors.white,
-                          color: Colors.red,
-                          shape: const StadiumBorder(),
+                      Container(
+                        padding: const EdgeInsets.all(15.0),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 50.0,
+                              height: 50.0,
+                              decoration: const BoxDecoration(
+                                shape: BoxShape.circle,
+                                image: DecorationImage(
+                                  fit: BoxFit.fill,
+                                  image: AssetImage(
+                                    "assets/default_profile_picture.png"
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10,),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    "Stany Lius",
+                                    style: TextStyle(
+                                      fontSize: 26.0,
+                                      color: Colors.black,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const Text(
+                                    "stanylius97@gmail.com",
+                                    style: TextStyle(
+                                      fontSize: 16.0,
+                                      color: Colors.blue,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Row(
+                                    children: [
+                                      InkWell(
+                                        onTap: () {
+                                          launch('https://www.linkedin.com/in/stany-lius-903860192/');
+                                        },
+                                        child: const Text(
+                                          "LInkedIn",
+                                          style: TextStyle(
+                                            decoration: TextDecoration.underline,
+                                            fontWeight: FontWeight.bold
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 20,),
+                                      InkWell(
+                                        onTap: () {
+                                          launch('https://github.com/Stanylius');
+                                        },
+                                        child: const Text(
+                                          "Github",
+                                          style: TextStyle(
+                                            decoration: TextDecoration.underline,
+                                            fontWeight: FontWeight.bold
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                ],
+                              ),
+                            )
+                          ],
                         ),
                       ),
-                      SizedBox(width: 10,),
-                      Expanded(
-                        child: MaterialButton(
-                          onPressed: (){
-                            BlocProvider.of<ApplicationBloc>(context).add(
-                              EventFour(
-                                input: int.parse(inputController.text)
-                              )
-                            );
-                          },
-                          height: 45,
-                          minWidth: 100,
-                          child: const Text('4', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),),
-                          textColor: Colors.white,
-                          color: Colors.red,
-                          shape: const StadiumBorder(),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 20,),
-                // result here
-                Container(
-                  padding: EdgeInsets.only(left: 15),
-                  child: Text(
-                    "Result"
-                  ),
-                ),
-                SizedBox(height: 10,),
-                SingleChildScrollView(
-                  padding: EdgeInsets.all(15),
-                  child: Column(
-                    children: [
-                      Text(
-                        applicationState.result
-                      )
-                    ],
+                    ],  
                   )
-                )
-              ],
+                ],
+              ),
             ) : Container();
           },
         ),
